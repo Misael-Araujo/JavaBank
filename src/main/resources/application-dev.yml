@@ -1,0 +1,5 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/financialservicedb}
+    username: ${DB_USERNAME:financialservice}
+    password: ${DB_PASSWORD:}

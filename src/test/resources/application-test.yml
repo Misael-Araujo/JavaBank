@@ -1,14 +1,22 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb
-    driverClassName: org.h2.Driver
+    url: jdbc:h2:mem:javabank;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
     username: sa
     password:
+    driver-class-name: org.h2.Driver
   jpa:
-    show-sql: true
-    open-in-view: false
     hibernate:
-      ddl-auto: create
-    properties:
-      hibernate:
-        format_sql: true
+      ddl-auto: validate
+  flyway:
+    enabled: false
+  sql:
+    init:
+      mode: always
+
+app:
+  jwt:
+    secret: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+    expiration: PT15M
+  integrations:
+    authorization-url: http://localhost/authorization
+    notification-url: http://localhost/notification
