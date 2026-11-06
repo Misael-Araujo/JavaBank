@@ -1,0 +1,74 @@
+@baseUrl = http://localhost:8080
+@adminEmail = admin@example.com
+@adminPassword = configure-a-strong-bootstrap-password
+@senderEmail = maria@example.com
+@senderPassword = UmaSenhaForte123!
+@recipientEmail = ana@example.com
+@recipientPassword = OutraSenhaForte123!
+@senderId = 2
+@recipientId = 3
+@senderToken = replace-with-sender-access-token
+@adminToken = replace-with-admin-access-token
+
+### Registrar remetente (CPF válido)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "completeName": "Maria Silva",
+  "email": "{{senderEmail}}",
+  "password": "{{senderPassword}}",
+  "document": "52998224725"
+}
+
+### Registrar destinatário (CPF válido)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "completeName": "Ana Souza",
+  "email": "{{recipientEmail}}",
+  "password": "{{recipientPassword}}",
+  "document": "11144477735"
+}
+
+### Login de administrador (BOOTSTRAP_ADMIN_EMAIL/PASSWORD)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### Creditar a conta remetente
+POST {{baseUrl}}/admin/users/{{senderId}}/credits
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "amount": 1000.00
+}
+
+### Login do remetente
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{senderEmail}}",
+  "password": "{{senderPassword}}"
+}
+
+### Transferir para o destinatário
+POST {{baseUrl}}/transactions
+Authorization: Bearer {{senderToken}}
+Content-Type: application/json
+
+{
+  "recipientId": {{recipientId}},
+  "amount": 25.50
+}
+
+### Consultar histórico do remetente
+GET {{baseUrl}}/transactions?page=0&size=20
+Authorization: Bearer {{senderToken}}

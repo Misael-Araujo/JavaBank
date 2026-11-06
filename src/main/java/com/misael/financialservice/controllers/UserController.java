@@ -2,49 +2,58 @@ package com.misael.financialservice.controllers;
 
 import java.util.List;
 
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import com.misael.financialservice.dto.UserResponse;
+import com.misael.financialservice.services.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.constraints.Positive;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.misael.financialservice.entities.dtos.UserRegistrationRequestDto;
-import com.misael.financialservice.entities.dtos.UserRegistrationResponseDto;
-import com.misael.financialservice.services.UserService;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-
 @RestController
-@RequestMapping(value = "/users",produces ={"application/json"})
-@Tag(name = "Financial Service")
+@RequestMapping("/users")
+@Validated
 public class UserController {
 
-    @Autowired
-    private UserService service;
-    @Operation(summary = "Realiza cadastro de usuarios")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Usuário cadastrado com sucesso."),
-            @ApiResponse(responseCode = "400", description = "Parametros inválidos." +
-                    "ou se Usuário está cadastrado."),
-    })
-    @PostMapping
-    public ResponseEntity<UserRegistrationResponseDto> saveUser(UserRegistrationRequestDto dto){
-        UserRegistrationResponseDto dto2 = service.saveUser(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(dto2);
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
-    @Operation(summary = "Realiza listagem de todos os usuarios registrados")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Listagem realizada com sucesso."),
-    })
+
+    @GetMapping("/me")
+    @Operation(summary = "Get the authenticated user's account")
+    public UserResponse getCurrentUser(@AuthenticationPrincipal Jwt jwt) {
+        return userService.getUser(currentUserId(jwt), currentUserId(jwt), isAdministrator(jwt));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Get an account owned by the authenticated user")
+    public UserResponse getUser(
+            @PathVariable("id") @Positive Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        return userService.getUser(id, currentUserId(jwt), isAdministrator(jwt));
+    }
+
     @GetMapping
-    public ResponseEntity<List<UserRegistrationResponseDto>> listAllUsers(){
-        return ResponseEntity.ok().body(service.listAllUsers());
+    @Operation(summary = "List users (ADMIN only)")
+    public Page<UserResponse> listAll(@PageableDefault(size = 20, sort = "id") Pageable pageable) {
+        return userService.listAll(pageable);
     }
 
+    private Long currentUserId(Jwt jwt) {
+        return ((Number) jwt.getClaim("uid")).longValue();
+    }
 
+    private boolean isAdministrator(Jwt jwt) {
+        List<String> roles = jwt.getClaimAsStringList("roles");
+        return roles != null && roles.contains("ADMIN");
+    }
 }
